@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+	<title>Web Chat</title>
+	<style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+	<script type="text/javascript">
+	var websocket = new WebSocket("ws://localhost:8080/WebSocket/chatServer");
+	function initMap() {
+		
+		  var map = new google.maps.Map(document.getElementById('map'), {
+		    center: {lat: -34.397, lng: 150.644},
+		    zoom: 6
+		  });
+		  var infoWindow = new google.maps.InfoWindow();
+		  
+		  var marker,i;
+    	  var markers = new Array();
+		  
+		  if(navigator.geolocation){
+				navigator.geolocation.getCurrentPosition(function (position){
+					var pos ={
+							lat: position.coords.latitude,
+							lng: position.coords.longitude
+					};
+					websocket.send(JSON.stringify(pos));
+					infoWindow.setPosition(pos);
+		            infoWindow.setContent('Minha location');
+		            map.setCenter(pos);
+		            marker = new google.maps.Marker({
+				        position: new google.maps.LatLng(pos.lat, pos.lng),
+				        map: map
+				      });
+					markers.push(marker);
+				});
+			}
+		  websocket.onmessage = function processMessage(message){
+				var jsonData = JSON.parse(message.data);
+				if(jsonData.length > 0){
+					for( i=0; i < jsonData.length; i++){
+						marker = new google.maps.Marker({
+			       			position: new google.maps.LatLng(jsonData[i].lat, jsonData[i].lng),
+			       	 		map: map,
+			       	 		title: jsonData[i].username;
+				      	});
+						markers.push(marker);
+					}
+					for( i=0; i < markers.length; i++){
+						infoWindow = new google.maps.InfoWindow();
+		            	infoWindow.open(map, marker);
+					}
+				}
+			}  
+	}
+	</script>
+</head>
+<body>
+	<div id="map"></div>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3qq0RuSgJKNfa6i85BsJCtA1gugsZPnY&signed_in=true&callback=initMap"
+        async defer>
+    </script>
+	</body>
+</html>
